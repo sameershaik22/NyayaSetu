@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import shutil
 from pathlib import Path
+import io
 
 router = APIRouter()
 
@@ -13,11 +14,11 @@ SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".jpg", ".jpeg", ".png"}
 # ─── Optional imports ───────────────────────────────────────────────────────
 
 try:
-    import fitz  # PyMuPDF
-    PYMUPDF_OK = True
+    import pdfplumber
+    PDFPLUMBER_OK = True
 except ImportError:
-    PYMUPDF_OK = False
-    print("[WARNING] PyMuPDF not installed.")
+    PDFPLUMBER_OK = False
+    print("[WARNING] pdfplumber not installed.")
 
 try:
     from docx import Document as DocxDocument
@@ -29,7 +30,6 @@ except ImportError:
 try:
     import pytesseract
     from PIL import Image
-    import io
     OCR_OK = True
 except ImportError:
     OCR_OK = False
@@ -39,23 +39,21 @@ except ImportError:
 # ─── Extractors ─────────────────────────────────────────────────────────────
 
 def extract_from_pdf(path: str) -> str:
-    if not PYMUPDF_OK:
+    if not PDFPLUMBER_OK:
         return ""
+
     try:
-        doc = fitz.open(path)
-        text = "".join(page.get_text() for page in doc)
-        doc.close()
-        # fallback to OCR for scanned pages
-        if len(text.strip()) < 100 and OCR_OK:
-            doc = fitz.open(path)
-            ocr_parts = []
-            for page in doc:
-                pix = page.get_pixmap(dpi=200)
-                img = Image.open(io.BytesIO(pix.tobytes("png")))
-                ocr_parts.append(pytesseract.image_to_string(img))
-            doc.close()
-            return "\n".join(ocr_parts).strip() or text
-        return text
+        text = ""
+
+        with pdfplumber.open(path) as pdf:
+            for page in pdf.pages:
+                extracted = page.extract_text()
+
+                if extracted:
+                    text += extracted + "\n"
+
+        return text.strip()
+
     except Exception as e:
         print(f"[ERROR] PDF extraction: {e}")
         return ""
@@ -100,6 +98,7 @@ def extract_from_image(path: str) -> str:
 def extract_text(path: str, ext: str) -> str:
     """Route to the correct extractor based on file extension."""
     ext = ext.lower()
+
     if ext == ".pdf":
         text = extract_from_pdf(path)
     elif ext == ".docx":
@@ -110,6 +109,7 @@ def extract_text(path: str, ext: str) -> str:
         text = extract_from_image(path)
     else:
         text = ""
+
     return text.strip() if text else ""
 
 
