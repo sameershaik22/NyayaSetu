@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 from pathlib import Path
@@ -17,7 +18,7 @@ app = FastAPI(
 # CORS for local React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["https://nyaya-setu-lime.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
