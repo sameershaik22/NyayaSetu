@@ -352,7 +352,7 @@ export default function UploadPage() {
               </div>
             ))}
           </div>
-          {typeof extractedData.source_text === "string" && extractedData.source_text && (
+          {typeof extractedData.source_text === "string" && (
             <div className="mt-3 p-3 rounded border border-blue-100 bg-blue-50">
               <div className="section-label text-blue-700 mb-1">🔍 Source Text</div>
               <p className="text-xs text-blue-800 italic">
